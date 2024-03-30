@@ -14,6 +14,9 @@ tauri-build = { version = "1", features = [] }
 tauri = { version = "1", features = ["shell-open"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+ort = "2.0.0-rc.1"
+tokenizers = "0"
+ndarray = "0"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
