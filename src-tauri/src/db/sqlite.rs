@@ -1,16 +1,19 @@
-use rusqlite::{Connection, Result, LoadExtensionGuard};
+use rusqlite::{Connection, Result, LoadExtensionGuard, params, Error};
+use ndarray::{ArrayBase, Array1, Dim, OwnedRepr};
+use byteorder::{ByteOrder, LittleEndian};
+use std::mem;
+
+// #[tauri::command]
+// pub fn db_fun() -> Result<String, String> {
+    
+// }
 
 
-#[tauri::command]
-pub fn db_fun() -> Result<String, String> {
-    test_db().map_err(|err| {eprintln!("{err}"); err.to_string()})?;
-    Ok("".into())
-}
-
-
-fn test_db() -> Result<(), rusqlite::Error> {
-    let conn = Connection::open("assets/db.sqlite")?;
-    println!("{:?}", conn);
+pub fn init_db() -> Result<Connection, Error> {
+    // let conn = Connection::open("assets/db.sqlite")?;
+    let conn = Connection::open_in_memory()?;
+    
+    // load extensions
     unsafe {
         let _guard = LoadExtensionGuard::new(&conn)?;
         conn.load_extension("assets/sqlite-vss-m1/vector0.dylib", None)?;
@@ -18,23 +21,61 @@ fn test_db() -> Result<(), rusqlite::Error> {
         println!("loading extensions success {:?}", conn);
     }
 
-    let res = conn.execute(
-        "create virtual table vss_files using vss0(
-            file_embedding(784),
+    conn.execute(
+        "create table if not exists files (
+            file_path text
         );", ()
     )?;
-    println!("{res}");
 
-    let res = conn.execute(
-        "create table files (
-            embedding_id integer,
-            file_path text,
-            foreign key (embedding_id) references vss_files(rowid)
+    conn.execute(
+        "create virtual table if not exists vss_files using vss0 (
+            file_embedding(784)
         );", ()
     )?;
-    println!("{res}");
+    Ok(conn)
+}
+
+pub fn add_embedding(conn: &Connection, path: &str, embedding: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>) -> Result<(), Error> {
+
+    let check_err = |err| {
+            match &err {
+                Error::SqlInputError { error, msg, sql, offset } => println!("input err {msg}, {sql}"),
+                Error::SqliteFailure(err, msg) => println!("sqlite failure {:?}, {:?}", err.to_string(), msg),
+                Error::ToSqlConversionFailure(err) => println!("conversion {:?}", err.to_string()),
+                Error::InvalidQuery => println!("invalid query"),
+                _ => println!("some other err")
+            };
+            err
+    };
+
+    let raw_bytes: &[u8] = &[0xde, 0xad, 0xbe, 0xef];
+    // add embedding, get rowid
+    conn.execute(
+        "insert into files (file_path) values (?1)", params![path]).map_err(check_err)?;
+    
+    let rowid = conn.last_insert_rowid();
+    println!("adding path a success, {rowid}");
+
+    let res = conn.execute(
+        // "insert into foo (bar, baz) values (?1, ?2)", ("apples", 5)).map_err(|err| {
+        "insert into vss_files (rowid, file_embedding) values (?1, ?2)", params![rowid, raw_bytes]).map_err(check_err)?;
+    
+        // "insert into vss_files (file_embedding) values (?1)", params![to_byte_array(&embedding)])?;
 
 
+
+    println!("adding file path a success");
 
     Ok(())
+}
+
+
+fn to_byte_array(array: &Array1<f32>) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(array.len() * mem::size_of::<f32>());
+    for &value in array.iter() {
+        let mut buf = [0u8; mem::size_of::<f32>()]; // Create a buffer for each f32
+        LittleEndian::write_f32(&mut buf, value); // Write the f32 into the buffer as bytes
+        bytes.extend_from_slice(&buf); // Extend the bytes vector with the buffer
+    }
+    bytes
 }

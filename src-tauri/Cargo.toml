@@ -11,13 +11,14 @@ edition = "2021"
 tauri-build = { version = "1", features = [] }
 
 [dependencies]
-tauri = { version = "1", features = ["shell-open"] }
+tauri = { version = "1", features = [ "dialog-all", "shell-open"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 ort = "2.0.0-rc.1"
 tokenizers = "0"
 ndarray = "0"
 rusqlite = { version = "0.31.0", features = ["bundled", "load_extension"] }
+byteorder = "1.5.0"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
