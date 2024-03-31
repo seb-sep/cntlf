@@ -3,6 +3,7 @@
 - File picker for frontend
 - SQLite vector DB to add file pointers
     - https://github.com/asg017/sqlite-vss
+        - The files table will store the rowid of its vector for joins
     - https://github.com/launchbadge/sqlx
     - https://github.com/unum-cloud/usearch (Move to this once they drop separate sqlite extensions)
 [x] Local embeddings model
