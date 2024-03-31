@@ -37,18 +37,6 @@ pub fn init_db() -> Result<Connection, Error> {
 
 pub fn add_embedding(conn: &Connection, path: &str, embedding: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>) -> Result<(), Error> {
 
-    let check_err = |err| {
-            match &err {
-                Error::SqlInputError { error, msg, sql, offset } => println!("input err {msg}, {sql}"),
-                Error::SqliteFailure(err, msg) => println!("sqlite failure {:?}, {:?}", err.to_string(), msg),
-                Error::ToSqlConversionFailure(err) => println!("conversion {:?}", err.to_string()),
-                Error::InvalidQuery => println!("invalid query"),
-                _ => println!("some other err")
-            };
-            err
-    };
-
-    let raw_bytes: &[u8] = &[0xde, 0xad, 0xbe, 0xef];
     // add embedding, get rowid
     conn.execute(
         "insert into files (file_path) values (?1)", params![path]).map_err(check_err)?;
@@ -56,9 +44,10 @@ pub fn add_embedding(conn: &Connection, path: &str, embedding: &ArrayBase<OwnedR
     let rowid = conn.last_insert_rowid();
     println!("adding path a success, {rowid}");
 
-    let res = conn.execute(
+    conn.execute(
         // "insert into foo (bar, baz) values (?1, ?2)", ("apples", 5)).map_err(|err| {
-        "insert into vss_files (rowid, file_embedding) values (?1, ?2)", params![rowid, raw_bytes]).map_err(check_err)?;
+        "insert into vss_files (rowid, file_embedding) values (?1, ?2)", 
+        params![rowid, to_byte_array(&embedding)]).map_err(check_err)?;
     
         // "insert into vss_files (file_embedding) values (?1)", params![to_byte_array(&embedding)])?;
 
@@ -79,3 +68,15 @@ fn to_byte_array(array: &Array1<f32>) -> Vec<u8> {
     }
     bytes
 }
+
+fn check_err(err: Error) -> Error {
+    match &err {
+        Error::SqlInputError { msg, sql, .. } => println!("input err {msg}, {sql}"),
+        Error::SqliteFailure(err, msg) => println!("sqlite failure {:?}, {:?}", err.to_string(), msg),
+        Error::ToSqlConversionFailure(err) => println!("conversion {:?}", err.to_string()),
+        Error::InvalidQuery => println!("invalid query"),
+        _ => println!("some other err")
+    };
+    err
+}
+
