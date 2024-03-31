@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod ai;
+mod db;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -11,7 +12,9 @@ fn greet(name: &str) -> String {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, ai::embed::embed_file])
+        .invoke_handler(tauri::generate_handler![greet, 
+            ai::embed::embed_file,
+            db::sqlite::db_fun])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

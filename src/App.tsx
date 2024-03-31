@@ -12,6 +12,10 @@ function App() {
     setEmbedding(await invoke("embed_file", { filePath: path }));
   }
 
+  async function testSql() {
+    setEmbedding(await invoke("db_fun"));
+  }
+
 
   return (
     <div className="container">
@@ -35,6 +39,7 @@ function App() {
       </form>
 
       <p>{embedding}</p>
+      <button onClick={testSql}>Test sqlite loading</button>
     </div>
   );
 }

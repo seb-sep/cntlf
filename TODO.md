@@ -2,9 +2,10 @@
 
 - File picker for frontend
 - SQLite vector DB to add file pointers
-    - https://alexgarcia.xyz/sqlite-vss/getting-started.html0
+    - https://github.com/asg017/sqlite-vss
     - https://github.com/launchbadge/sqlx
-- Local embeddings model
+    - https://github.com/unum-cloud/usearch (Move to this once they drop separate sqlite extensions)
+[x] Local embeddings model
     - https://github.com/huggingface/candle
     - https://github.com/huggingface/candle/blob/main/candle-book/src/inference/hub.md
     - https://huggingface.co/spaces/mteb/leaderboard

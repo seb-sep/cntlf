@@ -1,16 +1,42 @@
 use ort::{GraphOptimizationLevel, Session, TensorElementType, ValueType, inputs};
+use tauri::api::file;
 use tokenizers::Tokenizer;
-use ndarray::{Array1, ArrayBase, Axis, Dim, IxDynImpl, OwnedRepr};
+use ndarray::{Array1, ArrayBase, Axis, Dim, OwnedRepr, linalg::Dot};
+use std::fs;
+
+
+const SEQ_LEN: usize = 8192;
 
 
 #[tauri::command]
-pub fn embed_file(file_path: String) -> Result<String, String>{
+pub fn embed_file(file_path: String) -> Result<String, String> {
     println!("Running embedding");
-    let embedding = run_embedding(file_path).map_err(|err| {eprintln!("{err}"); err.to_string()})?;
+    let text = fs::read_to_string(file_path).map_err(|err| err.to_string())?;
+    let embedding = run_embedding(&text).map_err(|err| {eprintln!("{err}"); err.to_string()})?;
     Ok(embedding.to_string())
+    // test_embedding();
+    // Ok("".into())
 }
 
-fn run_embedding(file_path: String) -> Result<ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>>, ort::Error> {
+
+// fn documents_from_file(file_path: &str, tokenizer: Tokenizer) -> Result<Vec<String>, core::error::Error> {
+//     tokenizer.
+//     let contents = fs::read_to_string(file_path).
+// }
+
+fn test_embedding() {
+    let e1 = run_embedding("Hello world!").unwrap();
+    let e2 = run_embedding("The mitochondria is the powerhouse of the cell").unwrap();
+
+    let similarity = e1.dot(&e2) / (e1.dot(&e1).sqrt() * e2.dot(&e2).sqrt());
+
+    println!("{similarity}");
+
+
+    
+}
+
+fn run_embedding(document: &str) -> Result<ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>, ort::Error> {
     let embed_path = "assets/nomic-embed-quantized.onnx";
 
     // load the model
@@ -20,18 +46,16 @@ fn run_embedding(file_path: String) -> Result<ArrayBase<OwnedRepr<f32>, Dim<IxDy
         .commit_from_file(embed_path)?;
     
     // tokenize and reshape input
-    let (input_ids, type_ids, masks) = tokenize(&file_path).unwrap();
+    let (input_ids, type_ids, masks) = tokenize(&document).unwrap();
     let input_ids = input_ids.view().insert_axis(Axis(0));
     let type_ids = type_ids.view().insert_axis(Axis(0));
     let masks = masks.view().insert_axis(Axis(0));
 
-    println!("{:?}", input_ids.dim());
-
     // run model
     let outputs = model.run(inputs![input_ids, type_ids, masks]?)?;
-    let embedding = (&outputs[0]).try_extract_tensor::<f32>()?.mean_axis(Axis(1)).unwrap();
-    println!("{:?}", embedding);
-    Ok(embedding)
+    let embedding = (&outputs[0]).try_extract_tensor::<f32>()?.mean_axis(Axis(1)).unwrap().index_axis_move(Axis(0), 0);
+    println!("{:?}", embedding.dim());
+    Ok(embedding.into_dimensionality().unwrap())
 }
 
 type TokenArray = ArrayBase<OwnedRepr<i64>, Dim<[usize; 1]>>;
