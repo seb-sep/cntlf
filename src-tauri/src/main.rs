@@ -46,7 +46,8 @@ fn main() {
     tauri::Builder::default()
         .manage(resources)
         .invoke_handler(tauri::generate_handler![greet, 
-            ai::embed::embed_file])
+            ai::embed::embed_file,
+            db::sqlite::find_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

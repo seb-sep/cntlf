@@ -2,11 +2,20 @@ use rusqlite::{Connection, Result, LoadExtensionGuard, params, Error};
 use ndarray::{ArrayBase, Array1, Dim, OwnedRepr};
 use byteorder::{ByteOrder, LittleEndian};
 use std::mem;
+use crate::ai::embed::{run_embedding, Embedding, NomicTaskPrefix};
 
-// #[tauri::command]
-// pub fn db_fun() -> Result<String, String> {
-    
-// }
+use crate::AppResources;
+
+#[tauri::command]
+pub fn find_file(query: String, state: tauri::State<AppResources>) -> Result<String, String> {
+
+    let embedder = state.embedder.lock().unwrap();
+    let tokenizer = state.tokenizer.lock().unwrap();
+    let db = state.db.lock().unwrap();
+    let embedding = run_embedding(&query, &embedder, &tokenizer, NomicTaskPrefix::SearchQuery).map_err(|err| {eprintln!("{err}"); err.to_string()})?;
+    semantic_file_search(&db, &embedding).map_err(|err| err.to_string())
+
+}
 
 
 pub fn init_db() -> Result<Connection, Error> {
@@ -29,13 +38,13 @@ pub fn init_db() -> Result<Connection, Error> {
 
     conn.execute(
         "create virtual table if not exists vss_files using vss0 (
-            file_embedding(784)
+            file_embedding(768)
         );", ()
     )?;
     Ok(conn)
 }
 
-pub fn add_embedding(conn: &Connection, path: &str, embedding: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>) -> Result<(), Error> {
+pub fn add_embedding(conn: &Connection, path: &str, embedding: &Embedding) -> Result<(), Error> {
 
     // add embedding, get rowid
     conn.execute(
@@ -44,10 +53,17 @@ pub fn add_embedding(conn: &Connection, path: &str, embedding: &ArrayBase<OwnedR
     let rowid = conn.last_insert_rowid();
     println!("adding path a success, {rowid}");
 
+
+    // let vec: Vec<f32> = embedding.iter().cloned().collect();
+    // println!("{:?}", vec.to_string());
+    // let string_vec = embedding.to_string();
+    // println!("{}", string_vec.contains("..."));
+    // println!("adding vector {string_vec}");
+    
     conn.execute(
         // "insert into foo (bar, baz) values (?1, ?2)", ("apples", 5)).map_err(|err| {
         "insert into vss_files (rowid, file_embedding) values (?1, ?2)", 
-        params![rowid, to_byte_array(&embedding)]).map_err(check_err)?;
+        params![rowid, to_byte_array(embedding)]).map_err(check_err)?;
     
         // "insert into vss_files (file_embedding) values (?1)", params![to_byte_array(&embedding)])?;
 
@@ -56,6 +72,38 @@ pub fn add_embedding(conn: &Connection, path: &str, embedding: &ArrayBase<OwnedR
     println!("adding file path a success");
 
     Ok(())
+}
+
+fn get_file_vector(conn: &Connection, embedding: &Embedding) -> Result<String, Error> {
+    let res: String = conn.query_row(
+    "select files.file_embedding from vss_files as files
+        join (
+            select rowid from vss_files where vss_search(
+                file_embedding, ?1)
+            limit 1
+        ) as v on v.rowid = files.rowid;", 
+        params![to_byte_array(&embedding)],
+        |row| row.get(0),
+    )?;
+    println!("file search retured {:?}", res);
+    Ok(res)
+}
+
+
+fn semantic_file_search(conn: &Connection, embedding: &Embedding) -> Result<String, Error> {
+    let res: String = conn.query_row(
+    "select f.file_path from files as f
+        join (
+            select rowid from vss_files where vss_search(
+                file_embedding, ?1)
+            limit 1
+        ) as v on v.rowid = f.rowid;", 
+        params![to_byte_array(&embedding)],
+        |row| row.get(0),
+    )?;
+    println!("file search retured {res}");
+    Ok(res)
+
 }
 
 
@@ -79,4 +127,3 @@ fn check_err(err: Error) -> Error {
     };
     err
 }
-

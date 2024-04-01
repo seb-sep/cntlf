@@ -8,6 +8,7 @@ function App() {
 
   const [embedding, setEmbedding] = useState("");
   const [path, setPath] = useState("");
+  const [input, setInput] = useState("");
  
   async function selectFile() {
     try {
@@ -30,6 +31,15 @@ function App() {
     }
   }
 
+  async function findFile() {
+    try {
+      setEmbedding(await invoke("find_file", {query: input}));
+    } catch (error) {
+      console.error("error doing RAG:", error);
+      setEmbedding(JSON.stringify(error));
+    }
+  }
+
 
   async function embed() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -42,11 +52,6 @@ function App() {
 
   }
 
-  async function testSql() {
-    setEmbedding(await invoke("db_fun"));
-  }
-
-
   return (
     <div className="container">
       <h1>Welcome to Tauri!</h1>
@@ -57,6 +62,12 @@ function App() {
       <div>{path}</div>
       <button onClick={embed}>Embed</button>
       <p>{embedding}</p>
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+      />
+      <button onClick={findFile}>Search</button>
     </div>
   );
 }

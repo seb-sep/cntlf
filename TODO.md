@@ -10,6 +10,7 @@
     - https://github.com/huggingface/candle
     - https://github.com/huggingface/candle/blob/main/candle-book/src/inference/hub.md
     - https://huggingface.co/spaces/mteb/leaderboard
+    - https://huggingface.co/nomic-ai/nomic-embed-text-v1.5
     - https://github.com/pykeio/ort
     - https://huggingface.co/intfloat
 - File types:
