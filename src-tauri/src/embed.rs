@@ -3,7 +3,7 @@ use tauri::State;
 use tokenizers::{tokenizer, Tokenizer};
 use ndarray::{Array1, ArrayBase, Axis, Dim, OwnedRepr, linalg::Dot};
 use std::fs;
-use crate::db::sqlite;
+use crate::sqlite;
 
 use crate::AppResources;
 
@@ -93,49 +93,11 @@ fn tokenize(text: &str, tokenizer: &Tokenizer) -> Result<(TokenArray, TokenArray
     let type_ids = tokens.get_type_ids().iter().map(|i| *i as i64).collect::<Vec<_>>(); 
     let masks = tokens.get_attention_mask().iter().map(|i| *i as i64).collect::<Vec<_>>(); 
     Ok((Array1::from_vec(token_ids), Array1::from_vec(type_ids), Array1::from_vec(masks)))
-    
-}
 
-fn display_element_type(t: TensorElementType) -> &'static str {
-	match t {
-		TensorElementType::Bfloat16 => "bf16",
-		TensorElementType::Bool => "bool",
-		TensorElementType::Float16 => "f16",
-		TensorElementType::Float32 => "f32",
-		TensorElementType::Float64 => "f64",
-		TensorElementType::Int16 => "i16",
-		TensorElementType::Int32 => "i32",
-		TensorElementType::Int64 => "i64",
-		TensorElementType::Int8 => "i8",
-		TensorElementType::String => "str",
-		TensorElementType::Uint16 => "u16",
-		TensorElementType::Uint32 => "u32",
-		TensorElementType::Uint64 => "u64",
-		TensorElementType::Uint8 => "u8"
-	}
 }
-
-fn display_value_type(value: &ValueType) -> String {
-	match value {
-		ValueType::Tensor { ty, dimensions } => {
-			format!(
-				"Tensor<{}>({})",
-				display_element_type(*ty),
-				dimensions
-					.iter()
-					.map(|c| if *c == -1 { "dyn".to_string() } else { c.to_string() })
-					.collect::<Vec<_>>()
-					.join(", ")
-			)
-		}
-		ValueType::Map { key, value } => format!("Map<{}, {}>", display_element_type(*key), display_element_type(*value)),
-		ValueType::Sequence(inner) => format!("Sequence<{}>", display_value_type(inner))
-	}
-}
-
 #[cfg(test)]
 mod test {
-    use crate::ai::embed::{cosine_similarity, NomicTaskPrefix};
+    use crate::embed::{cosine_similarity, NomicTaskPrefix};
 
     use super::run_embedding;
 
@@ -143,7 +105,7 @@ mod test {
     #[test]
     fn vector_similarity_test() {
         let tokenizer = tokenizers::Tokenizer::from_file("assets/tokenizer.json").unwrap();
-        let model = crate::ai::embed::init_model().unwrap();
+        let model = crate::embed::init_model().unwrap();
 
         let root = "/Users/sebastiansepulveda/";
         let story = std::fs::read_to_string(root.to_owned() + "story.txt").unwrap();

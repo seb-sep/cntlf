@@ -2,7 +2,7 @@ use rusqlite::{Connection, Result, LoadExtensionGuard, params, Error};
 use ndarray::{ArrayBase, Array1, Dim, OwnedRepr};
 use byteorder::{ByteOrder, LittleEndian};
 use std::mem;
-use crate::ai::embed::{run_embedding, Embedding, NomicTaskPrefix};
+use crate::embed::{run_embedding, Embedding, NomicTaskPrefix};
 
 use crate::AppResources;
 

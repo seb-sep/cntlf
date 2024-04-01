@@ -7,12 +7,8 @@ use tokenizers::{tokenizer, Tokenizer};
 use rusqlite::Connection;
 use std::sync::Mutex;
 
-mod ai;
-mod db;
-
-use ai::embed::init_model;
-use db::sqlite::init_db;
-
+mod embed;
+mod sqlite;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -30,8 +26,8 @@ pub struct AppResources {
 }
 
 fn init_resources() -> AppResources {
-    let embedder = init_model().unwrap();
-    let db = init_db().unwrap();
+    let embedder = embed::init_model().unwrap();
+    let db = sqlite::init_db().unwrap();
     let tokenizer = Tokenizer::from_file("assets/tokenizer.json").unwrap();
 
     AppResources {
@@ -46,8 +42,8 @@ fn main() {
     tauri::Builder::default()
         .manage(resources)
         .invoke_handler(tauri::generate_handler![greet, 
-            ai::embed::embed_file,
-            db::sqlite::find_file])
+            embed::embed_file,
+            sqlite::find_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

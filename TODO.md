@@ -1,23 +1,18 @@
 # Features to Implement
 
-- File picker for frontend
-- SQLite vector DB to add file pointers
-    - https://github.com/asg017/sqlite-vss
-        - The files table will store the rowid of its vector for joins
-    - https://github.com/launchbadge/sqlx
-    - https://github.com/unum-cloud/usearch (Move to this once they drop separate sqlite extensions)
-[x] Local embeddings model
-    - https://github.com/huggingface/candle
-    - https://github.com/huggingface/candle/blob/main/candle-book/src/inference/hub.md
+- https://github.com/unum-cloud/usearch (Move to this once they drop separate sqlite extensions)
+- Document chunking
+- Batch embedding
+- Choose optimal execution device
+- Local embeddings model
     - https://huggingface.co/spaces/mteb/leaderboard
     - https://huggingface.co/nomic-ai/nomic-embed-text-v1.5
     - https://github.com/pykeio/ort
     - https://huggingface.co/intfloat
 - File types:
-    - Text (.md, code, .txt)
     - .docx
     - Audio (distil-whisper)
     - PDF
     - Applications
-- Frontend chat interface
+- [x] Frontend chat interface
 - Symlinks
