@@ -16,3 +16,7 @@
     - Applications
 - [x] Frontend chat interface
 - Symlinks
+- log errors to file
+- Prepend each document with file name (and perhaps file type? Not sure if this is necessary)
+- File icon, open file on click either in Finder or in default application
+
